@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" content="#f6f9f9" />
+    <title>Transfer Tool</title>
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="page-header">
+        <div class="brand-row">
+          <img class="brand-icon" src="/icon-192.png" alt="Transfer Tool icon" />
+          <div>
+            <p class="eyebrow">Transfer Tool</p>
+            <h1>Local file transfer</h1>
+            <p class="header-copy">Use this page to send files to Windows or download files the PC shared for you.</p>
+          </div>
+        </div>
+        <span id="session-badge" class="pill pill-neutral">Not paired</span>
+      </header>
+
+      <section class="card">
+        <div class="section-row">
+          <div>
+            <p class="section-label">Windows PC</p>
+            <h2 id="device-name">Loading...</h2>
+          </div>
+          <span id="device-status" class="pill pill-neutral">Checking</span>
+        </div>
+        <p class="section-copy">Stay on the same Wi-Fi, then pair once with the current code shown on the PC.</p>
+        <div class="meta-grid">
+          <div class="meta-item">
+            <span class="meta-label">Address</span>
+            <strong id="host-origin">-</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Mode</span>
+            <strong>Local only</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-row">
+          <div>
+            <p class="section-label">Pair</p>
+            <h2>Connect this device</h2>
+          </div>
+        </div>
+        <label class="field">
+          <span>Your device name</span>
+          <input id="mobile-name" type="text" placeholder="Matt's iPhone" maxlength="40" />
+        </label>
+        <label class="field">
+          <span>6-digit pairing code</span>
+          <input id="pairing-code" type="text" inputmode="numeric" maxlength="6" placeholder="123456" />
+        </label>
+        <button id="pair-button" class="button button-primary">Pair</button>
+        <p id="pair-message" class="helper-text">Enter the code from the Windows app.</p>
+      </section>
+
+      <section class="card">
+        <div class="section-row">
+          <div>
+            <p class="section-label">Upload</p>
+            <h2>Send files to Windows</h2>
+          </div>
+          <span id="upload-state" class="pill pill-neutral">Idle</span>
+        </div>
+        <label class="field">
+          <span>Select one or more files</span>
+          <input id="upload-input" type="file" multiple />
+        </label>
+        <p id="upload-summary" class="helper-text">No files selected.</p>
+        <button id="upload-button" class="button button-primary" disabled>Upload selected files</button>
+        <div class="progress-block">
+          <div class="progress-track">
+            <div id="upload-progress" class="progress-fill"></div>
+          </div>
+          <div id="upload-progress-label" class="progress-label">0%</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-row">
+          <div>
+            <p class="section-label">Downloads</p>
+            <h2>Files shared from Windows</h2>
+          </div>
+          <button id="refresh-downloads" class="button button-secondary">Refresh</button>
+        </div>
+        <div id="downloads-list" class="stack"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-row">
+          <div>
+            <p class="section-label">History</p>
+            <h2>Recent transfers</h2>
+          </div>
+          <button id="refresh-history" class="button button-secondary">Refresh</button>
+        </div>
+        <div id="history-list" class="stack"></div>
+      </section>
+    </main>
+
+    <template id="download-template">
+      <article class="item-card">
+        <div class="item-main">
+          <div class="item-title-row">
+            <h3 class="item-title"></h3>
+            <span class="item-pill">Ready</span>
+          </div>
+          <p class="item-meta"></p>
+          <p class="item-note"></p>
+        </div>
+        <div class="item-actions">
+          <button class="button button-secondary download-button">Download</button>
+          <div class="progress-track compact">
+            <div class="progress-fill"></div>
+          </div>
+          <div class="progress-label compact-label">0%</div>
+        </div>
+      </article>
+    </template>
+
+    <template id="history-template">
+      <article class="item-card simple-item-card">
+        <div class="item-title-row">
+          <h3 class="item-title"></h3>
+          <span class="item-pill history-pill">Done</span>
+        </div>
+        <p class="item-meta"></p>
+        <p class="item-note"></p>
+      </article>
+    </template>
+
+    <script src="/assets/app.js" defer></script>
+  </body>
+</html>

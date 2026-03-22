@@ -1,0 +1,38 @@
+# Runtime data and personal transfers
+runtime_data/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Logs and temp files
+*.log
+*.tmp
+*.temp
+
+# Windows app build artifacts
+windows-app/dist/
+windows-app/build/
+windows-app/.coverage
+dist/
+build/
+
+# Xcode / Swift
+DerivedData/
+.build/
+Package.resolved
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+
+# OS files
+.DS_Store
+Thumbs.db

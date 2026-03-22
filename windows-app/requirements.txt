@@ -1,0 +1,5 @@
+PySide6>=6.8
+Flask>=3.0
+requests>=2.32
+pytest>=8.0
+
