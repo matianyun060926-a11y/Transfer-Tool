@@ -24,6 +24,7 @@ windows-app/build/
 windows-app/.coverage
 dist/
 build/
+*.spec
 
 # Xcode / Swift
 DerivedData/
