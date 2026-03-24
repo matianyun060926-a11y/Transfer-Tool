@@ -19,7 +19,9 @@ It is intentionally small and local:
 On Windows, the desktop app runs a local server and shows:
 
 - the Windows PC local IP and URL
+- a QR code for opening the local URL and completing one-time trusted pairing
 - a 6-digit pairing code
+- trusted Safari devices with revoke support
 - received uploads
 - shared files prepared for iPhone/iPad download
 - transfer history
@@ -28,10 +30,12 @@ On Windows, the desktop app runs a local server and shows:
 On iPhone or iPad, Safari opens the Windows PC URL and provides a mobile-friendly web UI for:
 
 - entering the pairing code
+- restoring trusted access automatically for the same browser/device
 - uploading one or more files to Windows
 - downloading files that Windows shared
 - viewing recent transfer history
 - watching upload and download progress
+- retrying or cancelling the current transfer
 
 ## Current Repo Structure
 
@@ -91,8 +95,8 @@ Important folders:
 2. Create a virtual environment.
 3. Install the dependencies from `windows-app/requirements.txt`.
 4. Run `py windows-app/main.py`.
-5. Open the displayed local URL in Safari on your iPhone/iPad.
-6. Enter the pairing code shown in the Windows app.
+5. Open the displayed local URL in Safari on your iPhone/iPad, or scan the QR code from the desktop app to auto-pair.
+6. If you did not use the QR code, enter the pairing code shown in the Windows app once to trust that Safari device.
 
 ## Docs
 
@@ -136,9 +140,13 @@ Automated verification completed on the Python side with:
 
 - Windows-hosted local server
 - Safari mobile UI
+- QR code auto-pairing from the Windows app
 - 6-digit pairing
+- trusted-device restore for Safari
 - iPhone/iPad upload to Windows
 - Windows share for iPhone/iPad download
+- a dedicated drop zone in the Windows app Shared Files tab
+- retry and cancel controls for the current mobile transfer
 - recent JSON history
 - runtime data outside Git
 - beginner-friendly docs and code structure
@@ -153,8 +161,6 @@ Automated verification completed on the Python side with:
 
 ## Good Next Improvements
 
-- QR code for the local URL
-- drag and drop into the Windows app
 - expiring shared download links
 - optional ZIP naming controls
 - richer mobile diagnostics

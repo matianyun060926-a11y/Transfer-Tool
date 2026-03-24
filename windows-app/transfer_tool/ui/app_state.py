@@ -14,6 +14,7 @@ from transfer_tool.services.network_utils import get_preferred_lan_ip
 from transfer_tool.services.pairing import PairingManager
 from transfer_tool.services.runtime_paths import resolve_app_paths
 from transfer_tool.services.share_store import ShareStore
+from transfer_tool.services.trusted_device_store import TrustedDeviceStore
 from transfer_tool.services.web_transfer_service import WebTransferService
 
 
@@ -21,6 +22,7 @@ class AppState(QObject):
     receive_mode_changed = Signal(dict)
     shares_changed = Signal(list)
     history_changed = Signal(list)
+    trusted_devices_changed = Signal(list)
     web_activity_changed = Signal(dict)
     status_changed = Signal(str)
     log_message = Signal(str)
@@ -36,6 +38,7 @@ class AppState(QObject):
         self.settings.port = self.settings.port or DEFAULT_PORT
         self.logger = LoggingService(self.runtime_root / "logs" / "windows-app.log", self.log_message.emit)
         self.history_store = HistoryStore(self.runtime_root / "transfer_history" / "windows_history.json")
+        self.trusted_device_store = TrustedDeviceStore(self.runtime_root / "transfer_history" / "trusted_devices.json")
         self.file_store = FileStore(self.runtime_root / "received_files")
         self.share_store = ShareStore(
             self.runtime_root / "transfer_history" / "shared_files.json",
@@ -47,6 +50,7 @@ class AppState(QObject):
             file_store=self.file_store,
             share_store=self.share_store,
             history_store=self.history_store,
+            trusted_device_store=self.trusted_device_store,
             logger=self.logger,
             event_callback=self._handle_web_event,
         )
@@ -62,6 +66,7 @@ class AppState(QObject):
         self.refresh_receive_mode()
         self.emit_shares()
         self.emit_history()
+        self.emit_trusted_devices()
 
     def shutdown(self) -> None:
         self.server.stop()
@@ -89,6 +94,7 @@ class AppState(QObject):
                 "enabled": snapshot.enabled,
                 "pairing_code": snapshot.pairing_code,
                 "expires_at": snapshot.expires_at,
+                "qr_pair_url": f"{self.local_url()}?pair_token={snapshot.qr_pair_token}",
                 "port": self.settings.port,
                 "ip_address": self.local_ip(),
                 "device_name": self.settings.device_name,
@@ -105,6 +111,7 @@ class AppState(QObject):
                 "enabled": snapshot.enabled,
                 "pairing_code": snapshot.pairing_code,
                 "expires_at": snapshot.expires_at,
+                "qr_pair_url": "",
                 "port": self.settings.port,
                 "ip_address": self.local_ip(),
                 "device_name": self.settings.device_name,
@@ -143,7 +150,23 @@ class AppState(QObject):
     def emit_history(self) -> None:
         self.history_changed.emit(self.transfer_service.list_history())
 
+    def emit_trusted_devices(self) -> None:
+        self.trusted_devices_changed.emit(self.transfer_service.list_trusted_devices())
+
+    def revoke_trusted_device(self, device_id: str) -> None:
+        try:
+            if not self.transfer_service.revoke_trusted_device(device_id):
+                self.status_changed.emit("That trusted device was already removed")
+                return
+            self.pairing_manager.revoke_sessions_for_device(device_id)
+            self.emit_trusted_devices()
+            self.status_changed.emit("Trusted device revoked")
+        except Exception as exc:  # noqa: BLE001
+            self.logger.error(f"Failed to revoke trusted device: {exc}")
+            self.status_changed.emit(f"Failed to revoke trusted device: {exc}")
+
     def _handle_web_event(self, payload: dict) -> None:
         self.web_activity_changed.emit(payload)
         self.emit_history()
         self.emit_shares()
+        self.emit_trusted_devices()

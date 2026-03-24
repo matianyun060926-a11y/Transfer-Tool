@@ -58,13 +58,18 @@ The phone/tablet and Windows PC must be on the same LAN.
 
 ### 2. Open Safari
 
-Enter the URL shown by the Windows app, for example:
+Use either of these:
+
+- scan the QR code shown in the Windows app to open Safari and finish one-time trusted pairing automatically
+- or enter the URL shown by the Windows app, for example:
 
 `http://192.168.1.50:8765/`
 
 ### 3. Pair
 
-Enter:
+If you used the QR code, Safari should trust the device automatically.
+
+If you opened the URL manually, enter:
 
 - a device name
 - the 6-digit pairing code shown in the Windows app
@@ -75,6 +80,9 @@ You can then:
 
 - upload files from iPhone/iPad to Windows
 - download Windows-shared files to iPhone/iPad
+- reopen later in the same Safari browser without re-pairing for about 30 days unless trust is revoked or storage is cleared
+- retry a failed upload or download
+- cancel the current upload or download
 - refresh recent transfer history
 
 ## Optional Home Screen Setup
@@ -112,11 +120,18 @@ If a packaged executable exists at `dist\TransferTool\TransferTool.exe`, the scr
 ## Local Testing Flow
 
 1. Start the Windows app.
-2. Confirm the local IP and URL shown on the dashboard.
-3. Open that URL in Safari on the phone/tablet.
-4. Pair with the code.
-5. Upload a small test file from Safari.
-6. Confirm it appears under `runtime_data/received_files/`.
-7. Share a file from Windows.
-8. Download it from Safari.
-9. Confirm the history list updates.
+2. Confirm the local IP, URL, QR code, pairing code, and receive folder are shown on the dashboard.
+3. Scan the QR code from iPhone/iPad and confirm Safari opens the page already trusted without typing the code.
+4. Close Safari, reopen the same page later in the same browser, and confirm it restores access automatically without asking for the code again.
+5. In the Windows app, confirm the trusted device appears in the trusted devices list.
+6. Select that device in the Windows app and click `Revoke Selected`.
+7. Reload Safari and confirm it asks for pairing again.
+8. Go to `Shared Files` and drag one or more files into the drop zone.
+9. Confirm the files appear in the shared list immediately.
+10. Click the same drop zone and confirm it opens the file picker.
+11. Upload a small test file from Safari and confirm it appears under `runtime_data/received_files/`.
+12. Hover over the receive folder path in the Windows app and confirm the full path is available.
+13. Click `Copy Path` and confirm the full receive path is copied.
+14. Start another upload or download, then use Cancel in Safari while it is in progress.
+15. Confirm the transfer card shows the cancellation state.
+16. Use Retry and confirm the transfer can be started again.

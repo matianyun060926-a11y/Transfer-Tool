@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="theme-color" content="#f6f9f9" />
+    <meta name="theme-color" content="#f5efe8" />
     <title>Transfer Tool</title>
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.png" type="image/png" />
@@ -15,46 +15,34 @@
   </head>
   <body>
     <main class="app-shell">
-      <header class="page-header">
+      <header class="topbar">
         <div class="brand-row">
           <img class="brand-icon" src="/icon-192.png" alt="Transfer Tool icon" />
           <div>
             <p class="eyebrow">Transfer Tool</p>
-            <h1>Local file transfer</h1>
-            <p class="header-copy">Use this page to send files to Windows or download files the PC shared for you.</p>
+            <h1>Files</h1>
           </div>
         </div>
-        <span id="session-badge" class="pill pill-neutral">Not paired</span>
+        <div class="topbar-actions">
+          <button id="refresh-all" class="icon-button" type="button">Refresh</button>
+          <span id="session-badge" class="pill pill-neutral">Not paired</span>
+        </div>
       </header>
 
-      <section class="card">
-        <div class="section-row">
+      <section id="guidance-card" class="card guidance-card">
+        <p class="eyebrow">Quick Start</p>
+        <p id="guidance-text" class="body-copy">Step 1: Scan the QR code shown on Windows. Step 2: Select files to upload or download shared files below.</p>
+      </section>
+
+      <section id="pairing-card" class="card pairing-card">
+        <div class="section-head">
           <div>
-            <p class="section-label">Windows PC</p>
-            <h2 id="device-name">Loading...</h2>
+            <p class="eyebrow">Pairing</p>
+            <h2>Connect this device</h2>
           </div>
           <span id="device-status" class="pill pill-neutral">Checking</span>
         </div>
-        <p class="section-copy">Stay on the same Wi-Fi, then pair once with the current code shown on the PC.</p>
-        <div class="meta-grid">
-          <div class="meta-item">
-            <span class="meta-label">Address</span>
-            <strong id="host-origin">-</strong>
-          </div>
-          <div class="meta-item">
-            <span class="meta-label">Mode</span>
-            <strong>Local only</strong>
-          </div>
-        </div>
-      </section>
-
-      <section class="card">
-        <div class="section-row">
-          <div>
-            <p class="section-label">Pair</p>
-            <h2>Connect this device</h2>
-          </div>
-        </div>
+        <p id="pair-message" class="body-copy">Use the QR code on Windows or enter the 6-digit code here if needed.</p>
         <label class="field">
           <span>Your device name</span>
           <input id="mobile-name" type="text" placeholder="Matt's iPhone" maxlength="40" />
@@ -63,78 +51,82 @@
           <span>6-digit pairing code</span>
           <input id="pairing-code" type="text" inputmode="numeric" maxlength="6" placeholder="123456" />
         </label>
-        <button id="pair-button" class="button button-primary">Pair</button>
-        <p id="pair-message" class="helper-text">Enter the code from the Windows app.</p>
+        <button id="pair-button" class="button button-primary" type="button">Pair Device</button>
       </section>
 
-      <section class="card">
-        <div class="section-row">
+      <section class="card upload-card">
+        <div class="section-head">
           <div>
-            <p class="section-label">Upload</p>
+            <p class="eyebrow">Upload</p>
             <h2>Send files to Windows</h2>
           </div>
           <span id="upload-state" class="pill pill-neutral">Idle</span>
         </div>
-        <label class="field">
-          <span>Select one or more files</span>
+        <label class="picker">
           <input id="upload-input" type="file" multiple />
+          <span>Select one or more files</span>
         </label>
-        <p id="upload-summary" class="helper-text">No files selected.</p>
-        <button id="upload-button" class="button button-primary" disabled>Upload selected files</button>
-        <div class="progress-block">
-          <div class="progress-track">
-            <div id="upload-progress" class="progress-fill"></div>
-          </div>
-          <div id="upload-progress-label" class="progress-label">0%</div>
+        <p id="upload-summary" class="body-copy">No files selected.</p>
+        <button id="upload-button" class="button button-primary" type="button" disabled>Upload Files</button>
+        <div class="progress-track">
+          <div id="upload-progress" class="progress-fill"></div>
         </div>
+        <p id="upload-progress-label" class="meta-copy">0%</p>
       </section>
 
-      <section class="card">
-        <div class="section-row">
+      <section class="card shared-card">
+        <div class="section-head">
           <div>
-            <p class="section-label">Downloads</p>
-            <h2>Files shared from Windows</h2>
+            <p class="eyebrow">Shared From Windows</p>
+            <h2>Download files</h2>
           </div>
-          <button id="refresh-downloads" class="button button-secondary">Refresh</button>
         </div>
         <div id="downloads-list" class="stack"></div>
       </section>
 
-      <section class="card">
-        <div class="section-row">
+      <section class="card activity-card">
+        <div class="section-head">
           <div>
-            <p class="section-label">History</p>
-            <h2>Recent transfers</h2>
+            <p class="eyebrow">Recent Activity</p>
+            <h2>Latest transfers</h2>
           </div>
-          <button id="refresh-history" class="button button-secondary">Refresh</button>
+          <span id="transfer-state" class="pill pill-neutral">Idle</span>
+        </div>
+        <p id="transfer-message" class="body-copy">Waiting for activity.</p>
+        <p id="transfer-detail" class="meta-copy"></p>
+        <div class="progress-track">
+          <div id="transfer-progress" class="progress-fill"></div>
+        </div>
+        <p id="transfer-progress-label" class="meta-copy">0%</p>
+        <div class="button-row">
+          <button id="retry-transfer" class="button button-secondary" type="button" disabled>Retry</button>
+          <button id="cancel-transfer" class="button button-secondary" type="button" disabled>Cancel</button>
         </div>
         <div id="history-list" class="stack"></div>
       </section>
     </main>
 
     <template id="download-template">
-      <article class="item-card">
-        <div class="item-main">
-          <div class="item-title-row">
+      <article class="list-card">
+        <div class="section-head compact-head">
+          <div>
             <h3 class="item-title"></h3>
-            <span class="item-pill">Ready</span>
+            <p class="item-meta"></p>
           </div>
-          <p class="item-meta"></p>
-          <p class="item-note"></p>
+          <span class="item-pill download-pill">Ready</span>
         </div>
-        <div class="item-actions">
-          <button class="button button-secondary download-button">Download</button>
-          <div class="progress-track compact">
-            <div class="progress-fill"></div>
-          </div>
-          <div class="progress-label compact-label">0%</div>
+        <p class="item-note"></p>
+        <div class="progress-track compact-track">
+          <div class="progress-fill"></div>
         </div>
+        <p class="meta-copy progress-label">0%</p>
+        <button class="button button-secondary download-button" type="button">Download</button>
       </article>
     </template>
 
     <template id="history-template">
-      <article class="item-card simple-item-card">
-        <div class="item-title-row">
+      <article class="list-card history-item">
+        <div class="section-head compact-head">
           <h3 class="item-title"></h3>
           <span class="item-pill history-pill">Done</span>
         </div>

@@ -4,194 +4,227 @@ from __future__ import annotations
 def build_stylesheet() -> str:
     return """
     QWidget {
-        background: #f4f7f8;
-        color: #22313a;
+        background: #f4eee7;
+        color: #362a22;
         font-family: "Segoe UI", "Aptos", sans-serif;
         font-size: 14px;
     }
 
     QWidget#appRoot {
-        background: #f4f7f8;
+        background: #f4eee7;
     }
 
+    QFrame#sidebar {
+        background: #f7f1eb;
+        border: 1px solid #e7dbcf;
+        border-radius: 26px;
+    }
+
+    QFrame#pageHeader,
     QFrame[card="true"] {
-        background: #ffffff;
-        border: 1px solid #dde7ea;
-        border-radius: 18px;
+        background: #fbf8f4;
+        border: 1px solid #eadfd3;
+        border-radius: 24px;
     }
 
-    QLabel#headerTitle {
-        color: #203139;
-        font-size: 26px;
+    QFrame#fileDropZone {
+        background: #f6efe7;
+        border: 2px dashed #d1ae89;
+        border-radius: 22px;
+    }
+
+    QFrame#fileDropZone[activeDrop="true"] {
+        background: #f2e5d7;
+        border: 2px dashed #b8732b;
+    }
+
+    QLabel#sidebarBrand {
+        color: #2e241d;
+        font-size: 21px;
         font-weight: 700;
     }
 
-    QLabel#headerSubtitle {
-        color: #6e8189;
-        font-size: 14px;
+    QPushButton[navButton="true"] {
+        background: transparent;
+        color: #6f5b4b;
+        border: none;
+        border-radius: 16px;
+        padding: 12px 14px;
+        text-align: left;
+        font-weight: 700;
+    }
+
+    QPushButton[navButton="true"][activeNav="true"] {
+        background: #fff4e6;
+        color: #b26d24;
+        border: 1px solid #f0dcc4;
+    }
+
+    QLabel#pageKicker,
+    QLabel#fieldLabel {
+        color: #a07b59;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+    }
+
+    QLabel#pageTitle {
+        color: #2f241d;
+        font-size: 34px;
+        font-weight: 700;
     }
 
     QLabel#sectionTitle {
-        color: #22323a;
+        color: #2f241d;
+        font-size: 24px;
+        font-weight: 700;
+    }
+
+    QLabel#sectionTitleCompact {
+        color: #2f241d;
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    QLabel#pageSubtitle,
+    QLabel#sectionSubtitle {
+        color: #7b6859;
+        font-size: 13px;
+    }
+
+    QLabel#urlValue,
+    QLabel#fieldValue,
+    QLabel#folderValue {
+        color: #342920;
         font-size: 18px;
         font-weight: 700;
     }
 
-    QLabel#sectionSubtitle {
-        color: #768992;
-        font-size: 13px;
-    }
-
-    QLabel#fieldLabel {
-        color: #7b8c94;
-        font-size: 11px;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-    }
-
-    QLabel#fieldValue {
-        color: #22313a;
-        font-size: 15px;
-        font-weight: 600;
-    }
-
-    QLabel#urlValue {
-        color: #1e6f86;
-        font-size: 17px;
-        font-weight: 700;
-    }
-
-    QLabel#pairingValue {
-        color: #1d6173;
+    QLabel#pairDigit {
+        background: #fffaf5;
+        color: #7a4d1f;
+        border: 1px solid #ead8c7;
+        border-radius: 16px;
         font-size: 30px;
         font-weight: 700;
-        letter-spacing: 3px;
     }
 
-    QLabel#activityValue {
-        color: #203139;
-        font-size: 16px;
-        font-weight: 600;
+    QLabel#dropZoneTitle {
+        color: #3a2c22;
+        font-size: 20px;
+        font-weight: 700;
+        background: transparent;
+    }
+
+    QLabel#dropZoneSubtitle,
+    QLabel#dropZoneHint {
+        color: #86705f;
+        font-size: 13px;
+        background: transparent;
     }
 
     QLabel[badgeRole="neutral"] {
-        background: #eef4f6;
-        color: #69808a;
-        border: 1px solid #dce8eb;
+        background: #f2ebe4;
+        color: #7d6758;
+        border: 1px solid #e3d6ca;
         border-radius: 999px;
-        padding: 5px 10px;
-        font-weight: 600;
-    }
-
-    QLabel[badgeRole="ready"] {
-        background: #e9f8f7;
-        color: #20727c;
-        border: 1px solid #caece9;
-        border-radius: 999px;
-        padding: 5px 10px;
-        font-weight: 600;
-    }
-
-    QLabel[badgeRole="warning"] {
-        background: #fff5e8;
-        color: #8a6b32;
-        border: 1px solid #f1e1bf;
-        border-radius: 999px;
-        padding: 5px 10px;
-        font-weight: 600;
-    }
-
-    QLineEdit, QPlainTextEdit, QTableWidget {
-        background: #fbfcfc;
-        border: 1px solid #d9e5e8;
-        border-radius: 14px;
-        padding: 10px 12px;
-        color: #22313a;
-        selection-background-color: #d9f1f2;
-        selection-color: #203139;
-    }
-
-    QLineEdit:focus, QPlainTextEdit:focus, QTableWidget:focus {
-        border: 1px solid #9bcfd4;
-    }
-
-    QPushButton {
-        background: #f7fbfb;
-        color: #29404a;
-        border: 1px solid #d7e5e8;
-        border-radius: 12px;
-        padding: 10px 15px;
-        font-weight: 600;
-    }
-
-    QPushButton:hover {
-        background: #eef7f7;
-        border-color: #bddadd;
-    }
-
-    QPushButton:pressed {
-        background: #e8f1f2;
-    }
-
-    QPushButton[variant="primary"] {
-        background: #d9f1f2;
-        color: #225461;
-        border: 1px solid #bfdfdf;
+        padding: 5px 11px;
         font-weight: 700;
     }
 
-    QPushButton[variant="subtle"] {
-        background: #ffffff;
+    QLabel[badgeRole="ready"] {
+        background: #fff0de;
+        color: #b26d24;
+        border: 1px solid #f0d8b8;
+        border-radius: 999px;
+        padding: 5px 11px;
+        font-weight: 700;
+    }
+
+    QLabel[badgeRole="warning"] {
+        background: #f8e4de;
+        color: #b75640;
+        border: 1px solid #efc7bd;
+        border-radius: 999px;
+        padding: 5px 11px;
+        font-weight: 700;
+    }
+
+    QLineEdit,
+    QPlainTextEdit,
+    QTableWidget {
+        background: #fffaf6;
+        border: 1px solid #eadfd3;
+        border-radius: 18px;
+        padding: 10px 12px;
+        color: #362a22;
+        selection-background-color: #e5b37b;
+        selection-color: #2b2018;
+    }
+
+    QLineEdit:focus,
+    QPlainTextEdit:focus,
+    QTableWidget:focus {
+        border: 1px solid #c88741;
+    }
+
+    QPushButton {
+        background: #f3ebe3;
+        color: #5f4a3b;
+        border: 1px solid #e2d6ca;
+        border-radius: 16px;
+        padding: 11px 16px;
+        font-weight: 700;
+    }
+
+    QPushButton[variant="primary"] {
+        background: #b8732b;
+        color: #fff8f2;
+        border: 1px solid #b8732b;
     }
 
     QPushButton[variant="warning"] {
-        background: #fff4ea;
-        color: #7a5a24;
-        border: 1px solid #edd9bf;
+        background: #f6dfd9;
+        color: #8f4738;
+        border: 1px solid #efc7be;
     }
 
-    QTabWidget::pane {
+    QProgressBar {
+        background: #ede2d8;
         border: none;
-        margin-top: 16px;
+        border-radius: 999px;
+        min-height: 8px;
+        max-height: 8px;
     }
 
-    QTabBar::tab {
-        background: transparent;
-        color: #7a8b93;
-        border: none;
-        padding: 10px 14px;
-        margin-right: 14px;
-        font-weight: 600;
-    }
-
-    QTabBar::tab:selected {
-        color: #225866;
-        border-bottom: 2px solid #7ebec4;
+    QProgressBar::chunk {
+        background: #c27a2d;
+        border-radius: 999px;
     }
 
     QHeaderView::section {
-        background: #f7fafb;
-        color: #6b7f88;
+        background: #f8f2ec;
+        color: #8d7661;
         border: none;
-        border-bottom: 1px solid #dbe6e9;
-        padding: 11px 10px;
+        border-bottom: 1px solid #eadfd3;
+        padding: 10px 8px;
         font-weight: 700;
     }
 
     QTableWidget {
-        gridline-color: #eef3f4;
+        gridline-color: #f0e5db;
         outline: none;
     }
 
     QTableCornerButton::section {
-        background: #f7fafb;
+        background: #f8f2ec;
         border: none;
     }
 
     QStatusBar {
-        background: #f8fbfb;
-        color: #72858d;
-        border-top: 1px solid #dde7ea;
+        background: #f7f1eb;
+        color: #8a755f;
+        border-top: 1px solid #eadfd3;
     }
     """
-

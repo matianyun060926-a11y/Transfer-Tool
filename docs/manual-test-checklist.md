@@ -3,15 +3,19 @@
 ## Basic Setup
 
 - Windows app starts successfully.
-- The dashboard shows a local IP, URL, port, and pairing code.
+- The dashboard shows a local IP, URL, port, pairing code, and QR code.
 - The `runtime_data/` folders are created locally.
 
 ## Pairing
 
 - Safari can open the Windows URL.
+- Safari can open the page by scanning the QR code from the Windows app.
+- Scanning the QR code also completes trusted pairing automatically.
 - Correct pairing code succeeds.
 - Incorrect pairing code fails with a useful message.
 - Refreshing the pairing code invalidates the old code.
+- Reopening the page later in the same Safari browser restores trusted access without asking for the pairing code again.
+- Revoking a trusted device on Windows forces Safari to pair again.
 
 ## Uploads From iPhone/iPad To Windows
 
@@ -34,6 +38,9 @@
 - Device name can be edited and saved.
 - Pairing code can be refreshed.
 - Pairing can be disabled.
+- Dragging files into the Shared Files drop zone adds them immediately.
+- Clicking the Shared Files drop zone opens the file picker.
+- The receive folder path is readable, selectable, and copyable.
 - A shared file batch can be removed.
 - Diagnostics log updates during use.
 
@@ -42,14 +49,20 @@
 - Try opening the Safari page while the Windows app is closed.
 - Try using an expired pairing code.
 - Interrupt Wi-Fi during an upload.
+- Start an upload or download, then tap Cancel in Safari.
+- After a failed transfer, tap Retry in Safari.
 - Remove a shared batch and confirm it disappears from Safari after refresh.
 
 ## What Works Now
 
 - hosted Windows local server
 - Safari mobile UI
+- QR auto-pair entry from the Windows app
 - file uploads to Windows
 - file downloads from Windows
+- trusted Safari devices
+- dedicated drop zone in Shared Files
+- retry and cancel for the current mobile transfer
 - recent history
 - simple pairing
 
@@ -58,4 +71,3 @@
 - no discovery
 - no background mobile transfers
 - no resume support
-- no QR code helper yet

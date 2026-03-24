@@ -15,12 +15,14 @@ class WebTransferService:
         file_store,
         share_store,
         history_store,
+        trusted_device_store,
         logger,
         event_callback: ProgressEvent | None = None,
     ) -> None:
         self.file_store = file_store
         self.share_store = share_store
         self.history_store = history_store
+        self.trusted_device_store = trusted_device_store
         self.logger = logger
         self.event_callback = event_callback
 
@@ -32,6 +34,7 @@ class WebTransferService:
                 "status": "ready",
                 "message": f"Prepared {share['file_count']} file(s) for Safari download",
                 "share_id": share["share_id"],
+                "detail": share["download_name"],
             }
         )
         return share
@@ -61,6 +64,7 @@ class WebTransferService:
                     "status": "receiving",
                     "message": f"Saved {safe_name}",
                     "current_file": safe_name,
+                    "detail": f"Receiving from {mobile_device_name or 'iPhone/iPad'}",
                 }
             )
         entry = HistoryEntry(
@@ -78,6 +82,7 @@ class WebTransferService:
             {
                 "status": "success",
                 "message": f"Received {len(saved_names)} file(s) from {mobile_device_name or 'iPhone/iPad'}",
+                "detail": f"Saved to {batch.batch_dir}",
             }
         )
         return {
@@ -88,6 +93,48 @@ class WebTransferService:
 
     def list_history(self) -> list[dict]:
         return [entry.to_dict() for entry in self.history_store.load()]
+
+    def issue_trusted_device(self, device_id: str, device_name: str) -> dict:
+        trusted_token, record = self.trusted_device_store.issue_trust(device_id, device_name)
+        self._emit(
+            {
+                "status": "paired",
+                "message": f"Paired with {device_name or 'iPhone/iPad'}",
+                "trusted_device_name": device_name or "iPhone/iPad",
+                "detail": f"Trusted until {record['trust_expires_at']}",
+            }
+        )
+        return {
+            "trusted_device_token": trusted_token,
+            "trusted_until": record["trust_expires_at"],
+        }
+
+    def restore_trusted_device(self, trusted_token: str, device_id: str, device_name: str) -> dict | None:
+        record = self.trusted_device_store.restore_trust(trusted_token, device_id, device_name)
+        if record is not None:
+            self._emit(
+                {
+                    "status": "ready",
+                    "message": f"Restored trusted access for {record['device_name']}",
+                    "detail": f"Trusted until {record['trust_expires_at']}",
+                }
+            )
+        return record
+
+    def list_trusted_devices(self) -> list[dict]:
+        return self.trusted_device_store.list_devices()
+
+    def revoke_trusted_device(self, device_id: str) -> bool:
+        revoked = self.trusted_device_store.revoke_device(device_id)
+        if revoked:
+            self._emit(
+                {
+                    "status": "ready",
+                    "message": "Trusted device revoked",
+                    "detail": device_id,
+                }
+            )
+        return revoked
 
     def get_download_payload(self, share_id: str, mobile_device_name: str) -> dict:
         share = self.share_store.get_share(share_id)
@@ -114,6 +161,7 @@ class WebTransferService:
                 "message": f"Serving {share['download_name']} to {mobile_device_name or 'iPhone/iPad'}",
                 "share_id": share_id,
                 "downloads_count": updated_share["downloads_count"],
+                "detail": f"Download count: {updated_share['downloads_count']}",
             }
         )
         return {

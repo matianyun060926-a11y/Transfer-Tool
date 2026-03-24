@@ -85,6 +85,10 @@ class TransferServer:
                     sender_device_name=str(body.get("sender_device_name", "iPhone/iPad")),
                     pairing_code=str(body.get("pairing_code", "")),
                 )
+                trusted_payload = self._transfer_service.issue_trusted_device(
+                    session.sender_device_id,
+                    session.sender_device_name,
+                )
             except ValueError as exc:
                 return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
             return (
@@ -92,6 +96,61 @@ class TransferServer:
                     {
                         "session_token": session.session_token,
                         "expires_at": session.expires_at.isoformat(),
+                        "trusted_device_token": trusted_payload["trusted_device_token"],
+                        "trusted_until": trusted_payload["trusted_until"],
+                    }
+                ),
+                HTTPStatus.OK,
+            )
+
+        @app.post("/api/pair/direct")
+        def pair_direct() -> tuple:
+            body = request.get_json(silent=True) or {}
+            try:
+                session = self._pairing_manager.create_session_from_qr(
+                    sender_device_id=str(body.get("sender_device_id", "mobile-web")),
+                    sender_device_name=str(body.get("sender_device_name", "iPhone/iPad")),
+                    qr_pair_token=str(body.get("pair_token", "")),
+                )
+                trusted_payload = self._transfer_service.issue_trusted_device(
+                    session.sender_device_id,
+                    session.sender_device_name,
+                )
+            except ValueError as exc:
+                return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
+            return (
+                jsonify(
+                    {
+                        "session_token": session.session_token,
+                        "expires_at": session.expires_at.isoformat(),
+                        "trusted_device_token": trusted_payload["trusted_device_token"],
+                        "trusted_until": trusted_payload["trusted_until"],
+                    }
+                ),
+                HTTPStatus.OK,
+            )
+
+        @app.post("/api/trusted-session")
+        def trusted_session() -> tuple:
+            body = request.get_json(silent=True) or {}
+            trusted_record = self._transfer_service.restore_trusted_device(
+                trusted_token=str(body.get("trusted_device_token", "")),
+                device_id=str(body.get("sender_device_id", "mobile-web")),
+                device_name=str(body.get("sender_device_name", "iPhone/iPad")),
+            )
+            if trusted_record is None:
+                return jsonify({"error": "Trusted access expired or was revoked. Pair again on Windows."}), HTTPStatus.UNAUTHORIZED
+
+            session = self._pairing_manager.create_trusted_session(
+                sender_device_id=trusted_record["device_id"],
+                sender_device_name=trusted_record["device_name"],
+            )
+            return (
+                jsonify(
+                    {
+                        "session_token": session.session_token,
+                        "expires_at": session.expires_at.isoformat(),
+                        "trusted_until": trusted_record["trust_expires_at"],
                     }
                 ),
                 HTTPStatus.OK,
@@ -103,6 +162,13 @@ class TransferServer:
             if session is None:
                 return jsonify({"error": "Invalid or expired session"}), HTTPStatus.UNAUTHORIZED
             return jsonify({"items": self._transfer_service.list_history()}), HTTPStatus.OK
+
+        @app.get("/api/trusted-devices")
+        def trusted_devices() -> tuple:
+            session = self._require_session()
+            if session is None:
+                return jsonify({"error": "Invalid or expired session"}), HTTPStatus.UNAUTHORIZED
+            return jsonify({"items": self._transfer_service.list_trusted_devices()}), HTTPStatus.OK
 
         @app.get("/api/shares")
         def shares() -> tuple:
