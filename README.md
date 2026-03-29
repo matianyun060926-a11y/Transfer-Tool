@@ -1,166 +1,93 @@
 # Transfer Tool
 
-Transfer Tool is a personal-use local network file transfer MVP for:
+一个面向 Windows + iPhone/iPad Safari 的局域网文件传输工具，无需云端、登录、Mac 或 Xcode。
 
-- Windows desktop
-- iPhone / iPad in Safari
+A local-first file transfer tool that lets a Windows desktop share files with iPhone and iPad through Safari on the same Wi-Fi network.
 
-It is intentionally small and local:
+![Transfer Tool desktop UI](docs/screenshots/transfer-tool-overview.png)
 
-- local Wi-Fi / LAN only
-- no cloud
-- no login
-- no Xcode
-- no Mac required
-- no native mobile app pipeline
+## 适用场景
 
-## What It Does
+- 想在同一 Wi-Fi 下，把 Windows 里的文件快速发到 iPhone / iPad。
+- 想做一个不依赖云盘、账号体系和原生 iOS App 的本地传输工具。
+- 想展示一个完整的桌面端 + Web 端 + 局域网配对 + 打包分发项目。
 
-On Windows, the desktop app runs a local server and shows:
+## 我做了什么
 
-- the Windows PC local IP and URL
-- a QR code for opening the local URL and completing one-time trusted pairing
-- a 6-digit pairing code
-- trusted Safari devices with revoke support
-- received uploads
-- shared files prepared for iPhone/iPad download
-- transfer history
-- diagnostics logs
+- 设计并实现 Windows 桌面端主应用，负责启动本地服务、展示二维码、配对码、共享文件和诊断信息。
+- 构建 iPhone / iPad Safari 端移动 Web 界面，支持上传、下载、进度反馈和 trusted device 恢复。
+- 实现本地配对链路，包括二维码直达、6 位配对码、浏览器信任恢复和设备撤销。
+- 完成共享文件、接收文件、传输历史、运行时数据存储和日志体系。
+- 打磨桌面端 UI，包括自定义标题栏、统一视觉风格、应用图标和单文件 exe 打包。
 
-On iPhone or iPad, Safari opens the Windows PC URL and provides a mobile-friendly web UI for:
+## 项目亮点
 
-- entering the pairing code
-- restoring trusted access automatically for the same browser/device
-- uploading one or more files to Windows
-- downloading files that Windows shared
-- viewing recent transfer history
-- watching upload and download progress
-- retrying or cancelling the current transfer
+- `Local-first`: 局域网直连，不走云端，不需要登录。
+- `Windows host + Safari client`: Windows 负责托管，iPhone / iPad 直接用 Safari 即可。
+- `QR pairing`: 扫码即可打开移动页面并自动配对。
+- `Trusted device restore`: 同一浏览器后续访问可以自动恢复授权。
+- `Packaged desktop app`: 已支持 PyInstaller 打包，便于直接分发给他人使用。
 
-## Current Repo Structure
+## 当前支持的能力
+
+- Windows 桌面端启动本地服务并展示可访问地址。
+- iPhone / iPad Safari 上传文件到 Windows。
+- Windows 将文件共享给 iPhone / iPad 下载。
+- 二维码配对与 6 位配对码配对。
+- trusted device 恢复与手动撤销。
+- 传输历史、运行日志、诊断信息查看。
+
+## 技术栈
+
+- `Python 3.13`
+- `PySide6`
+- `Flask`
+- `HTML / CSS / JavaScript`
+- `PyInstaller`
+
+## 快速开始
+
+1. 在 Windows 安装 Python 3.13 或更新版本。
+2. 安装 `windows-app/requirements.txt` 中的依赖。
+3. 运行 `py windows-app/main.py`。
+4. 在桌面端查看本地 URL 或直接扫描二维码。
+5. 在 iPhone / iPad Safari 打开页面并完成一次配对后开始传输。
+
+## 仓库结构
 
 ```text
 Transfer Tool/
   web-app/
-    index.html
-    icon-192.png
-    icon-512.png
     assets/
-      app.js
-      styles.css
+    index.html
   windows-app/
-    launch_transfer_tool.bat
     main.py
-    requirements.txt
-    requirements-build.txt
     resources/
     scripts/
     transfer_tool/
-      models/
-      networking/
-      services/
-      ui/
     tests/
-  branding/
-  tools/
   docs/
-    architecture.md
-    protocol.md
-    setup.md
-    packaging.md
-    troubleshooting.md
-    manual-test-checklist.md
-  runtime_data/
-    received_files/
-    transfer_history/
-    logs/
+  tools/
   README.md
-  .gitignore
 ```
 
-## Runtime Data
+## 文档
 
-Runtime-generated files live under `runtime_data/` and are ignored by Git.
+- [Architecture](docs/architecture.md)
+- [Protocol](docs/protocol.md)
+- [Setup](docs/setup.md)
+- [Packaging](docs/packaging.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Manual Test Checklist](docs/manual-test-checklist.md)
 
-Important folders:
-
-- `runtime_data/received_files/`
-- `runtime_data/transfer_history/`
-- `runtime_data/logs/`
-- `runtime_data/shared_files/`
-
-## Quick Start
-
-1. Install Python 3.13 or newer on Windows.
-2. Create a virtual environment.
-3. Install the dependencies from `windows-app/requirements.txt`.
-4. Run `py windows-app/main.py`.
-5. Open the displayed local URL in Safari on your iPhone/iPad, or scan the QR code from the desktop app to auto-pair.
-6. If you did not use the QR code, enter the pairing code shown in the Windows app once to trust that Safari device.
-
-## Docs
-
-- [Architecture](C:/Users/Matt/Documents/GitHub/Transfer%20Tool/docs/architecture.md)
-- [Protocol](C:/Users/Matt/Documents/GitHub/Transfer%20Tool/docs/protocol.md)
-- [Setup](C:/Users/Matt/Documents/GitHub/Transfer%20Tool/docs/setup.md)
-- [Packaging](C:/Users/Matt/Documents/GitHub/Transfer%20Tool/docs/packaging.md)
-- [Troubleshooting](C:/Users/Matt/Documents/GitHub/Transfer%20Tool/docs/troubleshooting.md)
-- [Manual Test Checklist](C:/Users/Matt/Documents/GitHub/Transfer%20Tool/docs/manual-test-checklist.md)
-
-## Visual Refresh
-
-The current UI pass uses one consistent design language across desktop and mobile:
-
-- light background
-- soft blue / teal accents
-- gentle gray surfaces
-- rounded cards and calmer spacing
-- simpler status styling and cleaner hierarchy
-- shared app icon for Windows and Safari
-
-## Verification
-
-Automated verification completed on the Python side with:
+## 验证
 
 - `py -m compileall windows-app web-app`
 - `py -m pytest windows-app/tests`
 
-## Shortcut And Packaging
-
-- Packaged executable build:
-  - `powershell -ExecutionPolicy Bypass -File windows-app\scripts\build_pyinstaller.ps1`
-  - packaged folder: `dist\TransferTool\`
-  - main thing to click: `dist\TransferTool\TransferTool.exe`
-  - optional launcher in the folder: `dist\TransferTool\Open Transfer Tool.bat`
-
-- Secondary fallback PowerShell shortcut script:
-  - `powershell -ExecutionPolicy Bypass -File windows-app\scripts\create_desktop_shortcut.ps1`
-
-## What Works Now
-
-- Windows-hosted local server
-- Safari mobile UI
-- QR code auto-pairing from the Windows app
-- 6-digit pairing
-- trusted-device restore for Safari
-- iPhone/iPad upload to Windows
-- Windows share for iPhone/iPad download
-- a dedicated drop zone in the Windows app Shared Files tab
-- retry and cancel controls for the current mobile transfer
-- recent JSON history
-- runtime data outside Git
-- beginner-friendly docs and code structure
-
-## Simplifications
-
-- one hosted Windows server instead of peer-to-peer mobile hosting
-- no automatic device discovery
-- no background mobile transfers
-- no resumable downloads/uploads
-- shared Windows files stay available until manually removed
-
-## Good Next Improvements
+## 后续可继续增强的方向
 
 - expiring shared download links
-- optional ZIP naming controls
 - richer mobile diagnostics
+- resumable uploads / downloads
+- more polished project showcase assets and demo flows
