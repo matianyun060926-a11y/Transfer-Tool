@@ -10,8 +10,91 @@ def build_stylesheet() -> str:
         font-size: 14px;
     }
 
-    QWidget#appRoot {
+    QWidget#windowCanvas {
+        background: transparent;
+    }
+
+    QFrame#windowSurface {
         background: #f4eee7;
+        border: 1px solid #eadfd3;
+        border-radius: 16px;
+    }
+
+    QFrame#windowSurface[windowMaximized="true"] {
+        border-radius: 0px;
+    }
+
+    QFrame#customTitleBar {
+        background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 1, stop: 0 #fbf5ee, stop: 1 #f3e7da);
+        border-bottom: 1px solid #e4d4c3;
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+    }
+
+    QFrame#customTitleBar[windowMaximized="true"] {
+        border-top-left-radius: 0px;
+        border-top-right-radius: 0px;
+    }
+
+    QWidget#titleBarBrand,
+    QWidget#titleBarControls {
+        background: transparent;
+    }
+
+    QLabel#titleBarIcon,
+    QLabel#titleBarTitle,
+    QLabel#titleBarSubtitle {
+        background: transparent;
+    }
+
+    QLabel#titleBarTitle {
+        color: #2f241d;
+        font-size: 15px;
+        font-weight: 700;
+    }
+
+    QLabel#titleBarSubtitle {
+        color: #8f7258;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    QPushButton#titleBarButton {
+        background: transparent;
+        border: none;
+        border-radius: 12px;
+        padding: 0px;
+    }
+
+    QPushButton#titleBarButton:hover {
+        background: #eadccd;
+    }
+
+    QPushButton#titleBarButton:pressed {
+        background: #dfcdbb;
+    }
+
+    QPushButton#titleBarButton[windowControlRole="close"]:hover {
+        background: #cb745e;
+    }
+
+    QPushButton#titleBarButton[windowControlRole="close"]:pressed {
+        background: #b86450;
+    }
+
+    QWidget#appRoot {
+        background: transparent;
+    }
+
+    QFrame#windowFooter {
+        background: #f7f1eb;
+        border-bottom-left-radius: 16px;
+        border-bottom-right-radius: 16px;
+    }
+
+    QFrame#windowFooter[windowMaximized="true"] {
+        border-bottom-left-radius: 0px;
+        border-bottom-right-radius: 0px;
     }
 
     QFrame#sidebar {
@@ -222,9 +305,18 @@ def build_stylesheet() -> str:
         border: none;
     }
 
-    QStatusBar {
-        background: #f7f1eb;
+    QStatusBar#windowStatusBar {
+        background: transparent;
         color: #8a755f;
         border-top: 1px solid #eadfd3;
+        padding: 4px 12px;
+    }
+
+    QStatusBar#windowStatusBar[windowMaximized="true"] {
+        border-top: 1px solid #eadfd3;
+    }
+
+    QStatusBar#windowStatusBar::item {
+        border: none;
     }
     """

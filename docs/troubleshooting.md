@@ -18,7 +18,7 @@
 - Check that the Safari page is still open.
 - Try a smaller file first.
 - Watch the Diagnostics tab in the Windows app for errors.
-- Confirm the receive folder exists under `runtime_data/received_files/`.
+- Confirm the receive folder shown inside the Windows app still exists and is writable.
 
 ## Download Does Not Start
 
@@ -38,7 +38,7 @@ Try:
 
 ## History Looks Empty
 
-- History is stored locally on Windows in `runtime_data/transfer_history/windows_history.json`.
+- History is stored locally on Windows under `%LOCALAPPDATA%\TransferTool\transfer_history\windows_history.json`.
 - Only completed transfers are written to history.
 - Shared files that were prepared but not yet downloaded do not create a history entry until a download happens.
 

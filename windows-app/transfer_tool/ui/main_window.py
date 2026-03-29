@@ -1,12 +1,17 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QDesktopServices, QIcon, QPixmap
+import ctypes
+import sys
+from ctypes import wintypes
+
+from PySide6.QtCore import QEvent, QPoint, Qt, QTimer, QUrl
+from PySide6.QtGui import QCursor, QDesktopServices, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
     QFileDialog,
     QFrame,
+    QGraphicsDropShadowEffect,
     QGridLayout,
     QHBoxLayout,
     QLabel,
@@ -14,8 +19,8 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPlainTextEdit,
-    QPushButton,
     QProgressBar,
+    QPushButton,
     QStackedWidget,
     QStatusBar,
     QTableWidget,
@@ -25,8 +30,50 @@ from PySide6.QtWidgets import (
 )
 
 from transfer_tool.services.qr_code_service import build_qr_png_bytes
+from transfer_tool.ui.custom_title_bar import CustomTitleBar
 from transfer_tool.ui.file_drop_zone import FileDropZone
 from transfer_tool.ui.theme import build_stylesheet
+
+WM_GETMINMAXINFO = 0x0024
+MONITOR_DEFAULTTONEAREST = 2
+
+
+class RECT(ctypes.Structure):
+    _fields_ = [
+        ("left", ctypes.c_long),
+        ("top", ctypes.c_long),
+        ("right", ctypes.c_long),
+        ("bottom", ctypes.c_long),
+    ]
+
+
+class POINT(ctypes.Structure):
+    _fields_ = [
+        ("x", ctypes.c_long),
+        ("y", ctypes.c_long),
+    ]
+
+
+class MINMAXINFO(ctypes.Structure):
+    _fields_ = [
+        ("ptReserved", POINT),
+        ("ptMaxSize", POINT),
+        ("ptMaxPosition", POINT),
+        ("ptMinTrackSize", POINT),
+        ("ptMaxTrackSize", POINT),
+    ]
+
+
+class MONITORINFO(ctypes.Structure):
+    _fields_ = [
+        ("cbSize", ctypes.c_ulong),
+        ("rcMonitor", RECT),
+        ("rcWork", RECT),
+        ("dwFlags", ctypes.c_ulong),
+    ]
+
+
+_USER32 = ctypes.windll.user32 if sys.platform == "win32" else None
 
 
 def _format_bytes(value: int) -> str:
@@ -47,19 +94,82 @@ class MainWindow(QMainWindow):
         self._shares: list[dict] = []
         self._trusted_devices: list[dict] = []
         self._nav_buttons: dict[str, QPushButton] = {}
+        self._window_border = 8
+        self._window_margin = 14
+        self._use_custom_title_bar = sys.platform == "win32"
+        self._shadow_effect: QGraphicsDropShadowEffect | None = None
+        self.title_bar: CustomTitleBar | None = None
+        self._window_canvas: QWidget | None = None
+        self.window_surface: QFrame | None = None
+        self.window_canvas_layout: QVBoxLayout | None = None
+        self.window_footer: QFrame | None = None
+        self.window_status_bar: QStatusBar | None = None
+        self._window_handle_signals_bound = False
+        self._pending_window_maximized: bool | None = None
+        self._pending_maximize_retry_used = False
+
+        if self._use_custom_title_bar:
+            self.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
+            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+
         self.setWindowTitle("Transfer Tool")
+        self.setMinimumSize(1020, 720)
         self.resize(1180, 820)
         self._set_window_icon()
         self._build_ui()
         self._wire_signals()
+        self.windowTitleChanged.connect(self._handle_window_title_changed)
+        self._sync_window_chrome()
         self.state.refresh_receive_mode()
 
     def _set_window_icon(self) -> None:
         icon_path = self.state.paths.icon_path
-        if icon_path.exists():
-            self.setWindowIcon(QIcon(str(icon_path)))
+        if not icon_path.exists():
+            return
+        icon = QIcon(str(icon_path))
+        self.setWindowIcon(icon)
+        if self.title_bar is not None:
+            self.title_bar.set_window_icon(icon)
 
     def _build_ui(self) -> None:
+        canvas = QWidget()
+        canvas.setObjectName("windowCanvas")
+        canvas.setMouseTracking(True)
+        if self._use_custom_title_bar:
+            canvas.installEventFilter(self)
+        self._window_canvas = canvas
+        self.window_canvas_layout = QVBoxLayout(canvas)
+        self.window_canvas_layout.setContentsMargins(
+            self._window_margin,
+            self._window_margin,
+            self._window_margin,
+            self._window_margin,
+        )
+        self.window_canvas_layout.setSpacing(0)
+
+        self.window_surface = QFrame()
+        self.window_surface.setObjectName("windowSurface")
+        self.window_surface.setProperty("windowMaximized", False)
+        self.window_canvas_layout.addWidget(self.window_surface)
+
+        if self._use_custom_title_bar:
+            self._shadow_effect = QGraphicsDropShadowEffect(self.window_surface)
+            self._shadow_effect.setBlurRadius(34)
+            self._shadow_effect.setOffset(0, 10)
+            self._shadow_effect.setColor(self._shadow_effect.color().darker(160))
+            self.window_surface.setGraphicsEffect(self._shadow_effect)
+
+        surface_layout = QVBoxLayout(self.window_surface)
+        surface_layout.setContentsMargins(0, 0, 0, 0)
+        surface_layout.setSpacing(0)
+
+        if self._use_custom_title_bar:
+            self.title_bar = CustomTitleBar(self.windowTitle(), self.windowIcon())
+            self.title_bar.minimize_requested.connect(self.showMinimized)
+            self.title_bar.maximize_requested.connect(self._toggle_maximize_restore)
+            self.title_bar.close_requested.connect(self.close)
+            surface_layout.addWidget(self.title_bar)
+
         root = QWidget()
         root.setObjectName("appRoot")
         shell = QHBoxLayout(root)
@@ -67,8 +177,23 @@ class MainWindow(QMainWindow):
         shell.setSpacing(18)
         shell.addWidget(self._build_sidebar())
         shell.addWidget(self._build_main_area(), 1)
-        self.setCentralWidget(root)
-        self.setStatusBar(QStatusBar())
+        surface_layout.addWidget(root, 1)
+
+        self.window_footer = QFrame()
+        self.window_footer.setObjectName("windowFooter")
+        self.window_footer.setProperty("windowMaximized", False)
+        footer_layout = QVBoxLayout(self.window_footer)
+        footer_layout.setContentsMargins(0, 0, 0, 0)
+        footer_layout.setSpacing(0)
+
+        self.window_status_bar = QStatusBar()
+        self.window_status_bar.setObjectName("windowStatusBar")
+        self.window_status_bar.setSizeGripEnabled(False)
+        self.window_status_bar.setProperty("windowMaximized", False)
+        footer_layout.addWidget(self.window_status_bar)
+        surface_layout.addWidget(self.window_footer)
+
+        self.setCentralWidget(canvas)
 
     def _build_sidebar(self) -> QFrame:
         sidebar = QFrame()
@@ -84,7 +209,12 @@ class MainWindow(QMainWindow):
         icon_label.setFixedSize(30, 30)
         icon_png = self.state.paths.icon_path.with_suffix(".png")
         if icon_png.exists():
-            pixmap = QPixmap(str(icon_png)).scaled(30, 30, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            pixmap = QPixmap(str(icon_png)).scaled(
+                30,
+                30,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
             icon_label.setPixmap(pixmap)
         title = QLabel("Transfer Tool")
         title.setObjectName("sidebarBrand")
@@ -451,7 +581,8 @@ class MainWindow(QMainWindow):
         self.state.history_changed.connect(self._update_history)
         self.state.trusted_devices_changed.connect(self._update_trusted_devices)
         self.state.web_activity_changed.connect(self._update_activity)
-        self.state.status_changed.connect(self.statusBar().showMessage)
+        if self.window_status_bar is not None:
+            self.state.status_changed.connect(self.window_status_bar.showMessage)
         self.state.log_message.connect(self.log_view.appendPlainText)
 
     def _set_page(self, page_name: str) -> None:
@@ -478,7 +609,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Copy URL", "The local URL is not ready yet.")
             return
         QApplication.clipboard().setText(text)
-        self.statusBar().showMessage("Local URL copied")
+        self._show_status_message("Local URL copied")
 
     def _open_local_url(self) -> None:
         url = self.local_url_value.text().strip()
@@ -496,7 +627,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Copy Path", "The receive folder is not ready yet.")
             return
         QApplication.clipboard().setText(path_text)
-        self.statusBar().showMessage("Receive folder path copied")
+        self._show_status_message("Receive folder path copied")
 
     def _add_share_files(self) -> None:
         paths, _ = QFileDialog.getOpenFileNames(self, "Choose files to share with Safari")
@@ -545,7 +676,12 @@ class MainWindow(QMainWindow):
         qr_pixmap = QPixmap()
         qr_pixmap.loadFromData(qr_data, "PNG")
         self.qr_preview.setPixmap(
-          qr_pixmap.scaled(120, 160, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            qr_pixmap.scaled(
+                120,
+                160,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
         )
 
     def _update_shares(self, shares: list[dict]) -> None:
@@ -596,6 +732,249 @@ class MainWindow(QMainWindow):
         else:
             self.activity_progress.setRange(0, 100)
             self.activity_progress.setValue(0)
+
+    def _handle_window_title_changed(self, title: str) -> None:
+        if self.title_bar is not None:
+            self.title_bar.set_window_title(title)
+
+    def _toggle_maximize_restore(self) -> None:
+        self._set_window_maximized(not self.isMaximized())
+
+    def _set_window_maximized(self, maximized: bool) -> None:
+        self._bind_window_handle_signals()
+        self._pending_window_maximized = maximized
+        self._pending_maximize_retry_used = False
+
+        if maximized == self.isMaximized():
+            self._pending_window_maximized = None
+            return
+
+        if maximized:
+            self.showMaximized()
+        else:
+            self.showNormal()
+        QTimer.singleShot(0, self._finalize_pending_window_state)
+
+    def _show_status_message(self, message: str) -> None:
+        if self.window_status_bar is not None:
+            self.window_status_bar.showMessage(message)
+
+    def _sync_window_chrome(self) -> None:
+        if self.window_surface is None or self.window_canvas_layout is None:
+            return
+
+        maximized = self.isMaximized()
+        outer_margin = 0 if self._use_custom_title_bar and maximized else self._window_margin
+        self.window_canvas_layout.setContentsMargins(outer_margin, outer_margin, outer_margin, outer_margin)
+
+        for widget in (self.window_surface, self.window_footer, self.window_status_bar):
+            if widget is None:
+                continue
+            widget.setProperty("windowMaximized", maximized)
+            widget.style().unpolish(widget)
+            widget.style().polish(widget)
+
+        if self.title_bar is not None:
+            self.title_bar.set_maximized(maximized)
+
+        if self._shadow_effect is not None:
+            self._shadow_effect.setEnabled(not maximized)
+
+        if maximized:
+            self._clear_resize_cursor()
+
+    def _bind_window_handle_signals(self) -> None:
+        if self._window_handle_signals_bound:
+            return
+        handle = self.windowHandle()
+        if handle is None:
+            return
+        handle.windowStateChanged.connect(self._handle_window_state_changed)
+        self._window_handle_signals_bound = True
+
+    def _handle_window_state_changed(self, _state) -> None:
+        if self._pending_window_maximized is not None:
+            QTimer.singleShot(0, self._finalize_pending_window_state)
+            return
+        self._sync_window_chrome()
+
+    def _finalize_pending_window_state(self) -> None:
+        target = self._pending_window_maximized
+        if target is None:
+            self._sync_window_chrome()
+            return
+
+        if self.isMaximized() == target:
+            self._pending_window_maximized = None
+            self._pending_maximize_retry_used = False
+            self._sync_window_chrome()
+            return
+
+        if target and not self._pending_maximize_retry_used:
+            self._pending_maximize_retry_used = True
+            self.showMaximized()
+            QTimer.singleShot(0, self._finalize_pending_window_state)
+            return
+
+        self._pending_window_maximized = None
+        self._pending_maximize_retry_used = False
+        self._sync_window_chrome()
+
+    def changeEvent(self, event) -> None:  # noqa: N802
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.WindowStateChange:
+            if self._pending_window_maximized is not None:
+                QTimer.singleShot(0, self._finalize_pending_window_state)
+            else:
+                self._sync_window_chrome()
+
+    def showEvent(self, event) -> None:  # noqa: N802
+        super().showEvent(event)
+        if self._use_custom_title_bar:
+            QTimer.singleShot(0, self._bind_window_handle_signals)
+            QTimer.singleShot(0, self._sync_window_chrome)
+
+    def restore_from_title_bar_drag(self, local_pos: QPoint, global_pos: QPoint) -> None:
+        if not self.isMaximized():
+            return
+
+        normal_geometry = self.normalGeometry()
+        restored_width = max(normal_geometry.width(), self.minimumWidth())
+        restored_height = max(normal_geometry.height(), self.minimumHeight())
+        title_width = self.title_bar.width() if self.title_bar is not None else self.width()
+        horizontal_ratio = 0.5 if title_width <= 0 else min(max(local_pos.x() / title_width, 0.0), 1.0)
+        title_height = self.title_bar.height() if self.title_bar is not None else restored_height
+        title_offset = min(local_pos.y(), max(title_height - 1, 0))
+        target_x = global_pos.x() - int(restored_width * horizontal_ratio)
+        target_y = global_pos.y() - max(title_offset, 8)
+
+        self._pending_window_maximized = None
+        self._pending_maximize_retry_used = False
+        self.showNormal()
+        self._sync_window_chrome()
+        self.resize(restored_width, restored_height)
+        self.move(target_x, target_y)
+
+    def _resize_edges_at(self, global_pos: QPoint) -> Qt.Edges:
+        if not self._use_custom_title_bar or self.isMaximized():
+            return Qt.Edges()
+
+        local_pos = self.mapFromGlobal(global_pos)
+        if not self.rect().contains(local_pos):
+            return Qt.Edges()
+
+        edges = Qt.Edges()
+        if local_pos.x() < self._window_border:
+            edges |= Qt.Edge.LeftEdge
+        elif local_pos.x() >= self.width() - self._window_border:
+            edges |= Qt.Edge.RightEdge
+
+        if local_pos.y() < self._window_border:
+            edges |= Qt.Edge.TopEdge
+        elif local_pos.y() >= self.height() - self._window_border:
+            edges |= Qt.Edge.BottomEdge
+
+        return edges
+
+    def _cursor_for_edges(self, edges: Qt.Edges) -> Qt.CursorShape | None:
+        on_left = bool(edges & Qt.Edge.LeftEdge)
+        on_right = bool(edges & Qt.Edge.RightEdge)
+        on_top = bool(edges & Qt.Edge.TopEdge)
+        on_bottom = bool(edges & Qt.Edge.BottomEdge)
+
+        if (on_left and on_top) or (on_right and on_bottom):
+            return Qt.CursorShape.SizeFDiagCursor
+        if (on_right and on_top) or (on_left and on_bottom):
+            return Qt.CursorShape.SizeBDiagCursor
+        if on_left or on_right:
+            return Qt.CursorShape.SizeHorCursor
+        if on_top or on_bottom:
+            return Qt.CursorShape.SizeVerCursor
+        return None
+
+    def _clear_resize_cursor(self) -> None:
+        if self._window_canvas is not None:
+            self._window_canvas.unsetCursor()
+        self.unsetCursor()
+
+    def _update_resize_cursor(self, global_pos: QPoint | None = None) -> None:
+        if not self._use_custom_title_bar or self.isMaximized():
+            self._clear_resize_cursor()
+            return
+
+        if global_pos is None:
+            global_pos = QCursor.pos()
+
+        cursor_shape = self._cursor_for_edges(self._resize_edges_at(global_pos))
+        if cursor_shape is None:
+            self._clear_resize_cursor()
+            return
+
+        if self._window_canvas is not None:
+            self._window_canvas.setCursor(cursor_shape)
+        self.setCursor(cursor_shape)
+
+    def _start_system_resize(self, edges: Qt.Edges) -> bool:
+        if not edges or self.isMaximized():
+            return False
+        handle = self.windowHandle()
+        if handle is None:
+            return False
+        return handle.startSystemResize(edges)
+
+    def eventFilter(self, watched, event):  # noqa: N802
+        if watched is self._window_canvas and self._use_custom_title_bar:
+            event_type = event.type()
+            if event_type == QEvent.Type.MouseMove:
+                if event.buttons() == Qt.MouseButton.NoButton:
+                    self._update_resize_cursor(event.globalPosition().toPoint())
+            elif event_type == QEvent.Type.MouseButtonPress:
+                if event.button() == Qt.MouseButton.LeftButton:
+                    edges = self._resize_edges_at(event.globalPosition().toPoint())
+                    if edges and self._start_system_resize(edges):
+                        self._update_resize_cursor(event.globalPosition().toPoint())
+                        event.accept()
+                        return True
+            elif event_type == QEvent.Type.MouseButtonRelease:
+                self._update_resize_cursor(event.globalPosition().toPoint())
+            elif event_type == QEvent.Type.Leave:
+                self._clear_resize_cursor()
+
+        return super().eventFilter(watched, event)
+
+    def nativeEvent(self, event_type, message):  # noqa: N802
+        if not self._use_custom_title_bar or _USER32 is None:
+            return super().nativeEvent(event_type, message)
+
+        if event_type not in {b"windows_generic_MSG", "windows_generic_MSG"}:
+            return super().nativeEvent(event_type, message)
+
+        msg = wintypes.MSG.from_address(int(message))
+        if msg.message == WM_GETMINMAXINFO:
+            self._update_maximized_metrics(msg.hWnd, msg.lParam)
+            return True, 0
+
+        return super().nativeEvent(event_type, message)
+
+    def _update_maximized_metrics(self, hwnd, l_param: int) -> None:
+        if _USER32 is None:
+            return
+        monitor = _USER32.MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST)
+        if not monitor:
+            return
+
+        monitor_info = MONITORINFO()
+        monitor_info.cbSize = ctypes.sizeof(MONITORINFO)
+        if not _USER32.GetMonitorInfoW(monitor, ctypes.byref(monitor_info)):
+            return
+
+        max_info = MINMAXINFO.from_address(l_param)
+        max_info.ptMaxPosition.x = monitor_info.rcWork.left - monitor_info.rcMonitor.left
+        max_info.ptMaxPosition.y = monitor_info.rcWork.top - monitor_info.rcMonitor.top
+        max_info.ptMaxSize.x = monitor_info.rcWork.right - monitor_info.rcWork.left
+        max_info.ptMaxSize.y = monitor_info.rcWork.bottom - monitor_info.rcWork.top
+        max_info.ptMaxTrackSize.x = max_info.ptMaxSize.x
+        max_info.ptMaxTrackSize.y = max_info.ptMaxSize.y
 
     def closeEvent(self, event) -> None:  # noqa: N802
         self.state.shutdown()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,6 +18,13 @@ class AppPaths:
     is_frozen: bool
 
 
+def _resolve_packaged_runtime_root(executable_path: Path) -> Path:
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if local_app_data:
+        return Path(local_app_data) / "TransferTool"
+    return executable_path.parent / "runtime_data"
+
+
 def resolve_app_paths() -> AppPaths:
     is_frozen = bool(getattr(sys, "frozen", False))
     if is_frozen:
@@ -26,9 +34,9 @@ def resolve_app_paths() -> AppPaths:
         return AppPaths(
             project_root=install_root,
             resource_root=resource_root,
-            runtime_root=install_root / "runtime_data",
+            runtime_root=_resolve_packaged_runtime_root(executable_path),
             web_root=resource_root / "web-app",
-            scripts_root=install_root / "scripts",
+            scripts_root=resource_root / "scripts",
             icon_path=resource_root / "windows-app" / "resources" / "transfer-tool.ico",
             packaged_executable=executable_path,
             is_frozen=True,
