@@ -4,7 +4,7 @@
 
 A local-first file transfer tool that lets a Windows desktop share files with iPhone and iPad through Safari on the same Wi-Fi network.
 
-![Transfer Tool desktop UI](docs/screenshots/transfer-tool-overview.png)
+<img src="docs/screenshots/transfer-tool-overview.png" alt="Transfer Tool desktop UI" width="100%" />
 
 ## 适用场景
 
